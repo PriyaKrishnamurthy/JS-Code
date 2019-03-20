@@ -1,0 +1,144 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+    <title>To-do list of tasks</title>
+    </head>
+    <body>
+        <h2>To-Do list</h2>
+        <h3>Completed Tasks: </h3>
+        <ul></ul>
+        <h3>Pending Tasks: </h3>
+        <ul></ul>
+        <form id="taskForm">
+            <label>Enter your task</label>
+            <input type="text" id="text" name="text" placeholder="enter your task"/>
+            <input type="checkbox" id="status" name="status"/><label for="status">Is complete?</label><br/>
+            <input type="submit" value="Add">
+        </form>
+        <script>
+            class Task{
+	            constructor(data){
+  	                this.task = data.task;
+   	                this.status = data.status;
+                }
+                //get the current task and push it in static list and local storage
+                static save(currentTask){
+                    if (currentTask.status === true){
+                        Task.completedTasks.push(currentTask);
+                        localStorage.setItem("completedTasks", JSON.stringify(Task.completedTasks) );
+                    }else{
+                        Task.pendingTasks.push(currentTask);
+                        localStorage.setItem("pendingTasks", JSON.stringify(Task.pendingTasks) );
+                    }
+                }
+                static writeToLocalStorage(){
+                    localStorage.setItem("completedTasks", JSON.stringify(Task.completedTasks) );
+                    localStorage.setItem("pendingTasks", JSON.stringify(Task.pendingTasks));
+                }
+                static readFromLocalStorage(){
+                    Task.pendingTasks = localStorage.getItem('pendingTasks')? JSON.parse(localStorage.getItem('pendingTasks')):[];
+                    Task.completedTasks = localStorage.getItem('completedTasks')? JSON.parse(localStorage.getItem('completedTasks')):[];
+                }
+            }
+            const ulHandleList = document.getElementsByTagName('ul');
+            const formHandle = document.getElementById('taskForm');
+            const textHandle = document.getElementById('text');
+            const statushandle = document.getElementById('status');
+            loadPage();
+
+            function displayCompletedTasks(ulHandle){
+                ulHandle.innerHTML ='';
+                Task.readFromLocalStorage();
+                Task.completedTasks.forEach(completedTask => {
+                    let li = document.createElement('li');
+                    let statusBox = document.createElement('input');
+                    statusBox.setAttribute('type','checkbox');
+                    statusBox.setAttribute('name','statusBox');
+                    statusBox.setAttribute('id',completedTask.task);
+                    statusBox.setAttribute('onclick','statusChanged(this);');
+                    statusBox.setAttribute('checked', 'true');
+                    let s = document.createElement('s');
+                    s.innerHTML = completedTask.task;
+                    li.appendChild(statusBox);
+                    li.appendChild(s);
+                    ulHandle.appendChild(li);
+                });
+            }
+
+            function displayPendingTasks(ulHandle){
+                ulHandle.innerHTML ='';
+                Task.readFromLocalStorage();
+                Task.pendingTasks.forEach(pendingTask => {
+                    let li = document.createElement('li');
+                    let statusBox = document.createElement('input');
+                    statusBox.setAttribute('type','checkbox');
+                    statusBox.setAttribute('id',pendingTask.task);
+                    statusBox.setAttribute('name','statusBox');
+                    statusBox.setAttribute('onclick','statusChanged(this);');
+                    let text = document.createTextNode(pendingTask.task);
+                    li.appendChild(statusBox);
+                    li.appendChild(text);
+                    ulHandle.appendChild(li);
+                });
+            }
+            //First function to be called when page is loaded
+            function loadPage(){
+                //read from local storage and display in list
+                Task.readFromLocalStorage();
+                displayCompletedTasks(ulHandleList[0]);
+                displayPendingTasks(ulHandleList[1]);
+            }
+            formHandle.addEventListener("submit",(e)=>{
+                e.preventDefault();
+                //Read input task and the iscomplete status from user and make it an object
+                //{task:'cleaning',status:'true'}
+                let task = textHandle.value;
+                let status = statushandle.checked;
+                let currentTask = {task,status};
+                //save the extra task to local storage and the static variable
+                Task.save(currentTask);
+                
+                loadPage();
+                //Clear the input text and checkbox fields for the next input
+                textHandle.value = '';
+                statushandle.checked = false;
+            },false);
+            
+            function statusChanged(node){
+                    Task.readFromLocalStorage();
+                    //The item needs to be moved to completed list and removed from pending list
+                    if (node.checked){
+                        //add to completedtask list
+                       //        Task.completedTasks.push({'task':node.id,'status': true});
+                        Task.save({'task':node.id,'status': true});
+                        //remove from the pending list as the task is now complete
+                        for(let i = 0; i < Task.pendingTasks.length; i++){
+                            if(Task.pendingTasks[i].task === node.id){
+                                Task.pendingTasks.splice(i,1);
+                            }
+                        }
+                        //write to local storage since the static variables are updated and display
+                        Task.writeToLocalStorage();
+                        displayCompletedTasks(ulHandleList[0]);
+                        displayPendingTasks(ulHandleList[1]);
+                    }else{
+                        console.log('i am pending');
+                        //add to pending list
+                        Task.save({'task':node.id,'status': false});
+                        //remove from completed list                        
+                        for(let i = 0; i < Task.completedTasks.length; i++){
+                            if(Task.completedTasks[i].task === node.id){
+                                Task.completedTasks.splice(i,1);
+                            }
+                        }
+                        //update local storage since the static variables have been updated and then display the values
+                        Task.writeToLocalStorage();
+                        displayCompletedTasks(ulHandleList[0]);
+                        displayPendingTasks(ulHandleList[1]);
+                    }
+                }
+            
+        </script>
+    
+</body>
+</html>
